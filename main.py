@@ -189,8 +189,15 @@ if prompt := st.chat_input("How can I help?"):
         st.markdown(prompt)
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
-        context = query_database(prompt,db)
-        print(context)
+        context_list = []
+        context = []
+        for file in current_file_names:
+            db = load_database(embeddings, os.path.join("DBs", file))
+            info = query_database(prompt,db)
+            print(type(info))
+            context += info
+        #context = query_database(prompt,db)
+        print(len(context))
         full_response = get_response(context,prompt,llm)
         message_placeholder.markdown(full_response)   
     st.session_state.messages.append({"role": "assistant", "content": full_response})
