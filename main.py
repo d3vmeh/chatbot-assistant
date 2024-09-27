@@ -12,7 +12,9 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 
 from langchain.schema.document import Document
+import chromadb
 
+chromadb.api.client.SharedSystemClient.clear_system_cache()
 
 def load_chat_history():
     with shelve.open("conversation_history") as db:
@@ -77,11 +79,22 @@ if "messages" not in st.session_state:
     st.session_state.messages = load_chat_history()
 
 file_list = []
+removed_files = []
+current_file_names = []
+
 with st.sidebar:
 
-
+    previous_file_names = current_file_names
     if "uploader_key" not in st.session_state:
         st.session_state["uploader_key"] = 1
+
+
+    if 'uploaded_files' not in st.session_state:
+        st.session_state['uploaded_files'] = []
+
+
+    #uploaded_files = st.file_uploader("Upload multiple files", accept_multiple_files=True)
+    previous_file_names = [file.name for file in st.session_state['uploaded_files']]
 
     if st.button("Clear Chat History"):
         st.session_state.messages = []
@@ -89,8 +102,10 @@ with st.sidebar:
     
     if st.button("Clear Databases"):
         for database_to_remove in os.listdir("DBs"):
-
-            shutil.rmtree(os.path.join("DBs", database_to_remove))
+            try:
+                shutil.rmtree(os.path.join("DBs", database_to_remove))
+            except:
+                print("Error")
             # p = os.path.join("DBs", database_to_remove)
             # for file in os.listdir(p):
             #     print(file, type(file))
@@ -99,17 +114,35 @@ with st.sidebar:
         print("===================\nDatabases cleared\n===================\n")
         st.write("Databases cleared")
         st.session_state["uploader_key"] += 1
+        chromadb.api.client.SharedSystemClient.clear_system_cache()
 
+
+    #st.session_state["uploader_key"] = 1
 
     uploaded_files = st.file_uploader(
         "Choose a PDF file", 
         accept_multiple_files=True,
         key=st.session_state["uploader_key"]
     )
+
+    st.session_state['uploaded_files'] = uploaded_files
+
+
+    #previous_file_names = [file.name for file in st.session_state['uploaded_files']]
+
+    #print("a1231231",current_file_names)
+    #previous_file_names = current_file_names
+
+    current_file_names = [file.name for file in uploaded_files] if uploaded_files else []
+
+    print("asdasdasdasd",len(uploaded_files))
+    print(current_file_names)
+    print(previous_file_names)
+
     if len(uploaded_files) > 0:
-        print(f"\n\n {len(uploaded_files)} Uploaded files")
+        #print(f"\n\n {len(uploaded_files)} Uploaded files")
         print(uploaded_files)
-        print("\n\n\n")
+        #print("\n\n\n")
         for uploaded_file in uploaded_files:
             if uploaded_file is not None:
                 file_list.append(uploaded_file.name)
@@ -118,10 +151,31 @@ with st.sidebar:
             #st.write(bytes_data)
             filename = uploaded_file.name
             db_path = os.path.join("DBs",filename)
-            file_text = extract_pdf_text(uploaded_file)
-            print(type(file_text))
-            doc = Document(file_text)
-            save_database(embeddings, create_chunks([doc]), db_path)
+            if not os.path.exists(db_path):# and st.session_state["uploader_key"] != 2:
+                os.makedirs(db_path)
+                file_text = extract_pdf_text(uploaded_file)
+                print(type(file_text))
+                doc = Document(file_text)
+                print("Trying to save:",len(file_text),"at",db_path)
+                save_database(embeddings, create_chunks([doc]), db_path)
+                
+
+    print("Current file names: ", current_file_names)
+    print("Previous file names: ", previous_file_names)
+    # Identify which files were removed by comparing lists
+    for prev_file_name in previous_file_names:
+        print("hi")
+        print(prev_file_name)
+        if prev_file_name not in current_file_names:
+            print("Hello")
+            #removed_files.append(prev_file_name)
+
+        #if remove_file:
+            #file_list.remove(file_name)
+            shutil.rmtree(os.path.join("DBs", prev_file_name))
+            chromadb.api.client.SharedSystemClient.clear_system_cache()
+
+
 
 
 for message in st.session_state.messages:

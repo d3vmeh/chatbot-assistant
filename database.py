@@ -45,7 +45,7 @@ def create_chunks(document,replace_newlines=False):#path, replace_newlines=False
 
 def save_database(embeddings, chunks, path):    
     database = Chroma.from_documents(chunks,embeddings,persist_directory=path)
-    database.persist()
+    #database.persist()
     print(f"Saved {len(chunks)} chunks to Chroma")
 
 def load_database(embeddings, path):
