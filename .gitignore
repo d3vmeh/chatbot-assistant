@@ -1,3 +1,4 @@
 DBs/
 __pycache__/
 conversation_history.db
+uploaded_files.pkl

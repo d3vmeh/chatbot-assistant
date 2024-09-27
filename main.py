@@ -10,7 +10,10 @@ from langchain_community.llms.ollama import Ollama
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+from langchain.chains import ConversationChain
+from langchain.memory.summary import ConversationSummaryMemory
 
+import pickle
 from langchain.schema.document import Document
 import chromadb
 
@@ -33,12 +36,11 @@ def get_response(context, question, llm):
         [
         (
             "system",
-            "You are an experienced advisor and international diplomat who is assisting the US government in foreign policy. You use natural language "
-         "to answer questions based on structured data, unstructured data, and community summaries. You are thoughtful and thorough in your responses."
+            "You are a helpful assistant. You are thoughtful and thorough in your responses."
         ),
         (
             "user",
-            """Answer the question only based on the following context:
+            """Use the following context to help you answer the question:
             {context}
 
 
@@ -82,6 +84,14 @@ file_list = []
 removed_files = []
 current_file_names = []
 
+conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
+try:
+    with open('uploaded_files.pkl', 'rb') as file: 
+        s = pickle.load(file) 
+    print("LOADED FROM FILE",len(s))
+    #st.session_state['uploaded_files'] = s
+except:
+    pass
 with st.sidebar:
 
     previous_file_names = current_file_names
@@ -92,7 +102,16 @@ with st.sidebar:
     if 'uploaded_files' not in st.session_state:
         st.session_state['uploaded_files'] = []
 
-
+    try:
+        with open('uploaded_files.pkl', 'rb') as file: 
+            loaded = pickle.load(file) 
+        print("LOADED FROM FILE",len(s))
+        #st.session_state['uploaded_files'] = s
+        #uploaded_files = s
+    except:
+        pass
+    
+    #st.session_state['uploaded_files'] = s
     #uploaded_files = st.file_uploader("Upload multiple files", accept_multiple_files=True)
     previous_file_names = [file.name for file in st.session_state['uploaded_files']]
 
@@ -114,6 +133,8 @@ with st.sidebar:
         print("===================\nDatabases cleared\n===================\n")
         st.write("Databases cleared")
         st.session_state["uploader_key"] += 1
+        current_file_names = []
+        previous_file_names = []
         chromadb.api.client.SharedSystemClient.clear_system_cache()
 
 
@@ -124,8 +145,12 @@ with st.sidebar:
         accept_multiple_files=True,
         key=st.session_state["uploader_key"]
     )
-
+    uploaded_files += loaded
     st.session_state['uploaded_files'] = uploaded_files
+    with open('uploaded_files.pkl', 'wb') as file: 
+        print("SAVING:",len(uploaded_files))
+        s = pickle.dump(st.session_state["uploaded_files"],file)
+        file.close()
 
 
     #previous_file_names = [file.name for file in st.session_state['uploaded_files']]
@@ -143,6 +168,7 @@ with st.sidebar:
         #print(f"\n\n {len(uploaded_files)} Uploaded files")
         print(uploaded_files)
         #print("\n\n\n")
+        st.write("Loaded Files:")
         for uploaded_file in uploaded_files:
             if uploaded_file is not None:
                 file_list.append(uploaded_file.name)
@@ -152,12 +178,13 @@ with st.sidebar:
             filename = uploaded_file.name
             db_path = os.path.join("DBs",filename)
             if not os.path.exists(db_path):# and st.session_state["uploader_key"] != 2:
-                os.makedirs(db_path)
-                file_text = extract_pdf_text(uploaded_file)
-                print(type(file_text))
-                doc = Document(file_text)
-                print("Trying to save:",len(file_text),"at",db_path)
-                save_database(embeddings, create_chunks([doc]), db_path)
+                with st.spinner('Saving to database...'):
+                    os.makedirs(db_path)
+                    file_text = extract_pdf_text(uploaded_file)
+                    print(type(file_text))
+                    doc = Document(file_text)
+                    print("Trying to save:",len(file_text),"at",db_path)
+                    save_database(embeddings, create_chunks([doc]), db_path)
                 
 
     print("Current file names: ", current_file_names)
@@ -191,15 +218,18 @@ if prompt := st.chat_input("How can I help?"):
         message_placeholder = st.empty()
         context_list = []
         context = []
-        for file in current_file_names:
-            db = load_database(embeddings, os.path.join("DBs", file))
-            info = query_database(prompt,db)
-            print(type(info))
-            context += info
-        #context = query_database(prompt,db)
-        print(len(context))
-        full_response = get_response(context,prompt,llm)
-        message_placeholder.markdown(full_response)   
+        
+        with st.spinner("Searching Database..."):
+            for file in current_file_names:
+                db = load_database(embeddings, os.path.join("DBs", file))
+                info = query_database(prompt,db)
+                print(type(info))
+                context += info
+            #context = query_database(prompt,db)
+            print(len(context))
+
+            full_response = get_response(context,prompt,llm)
+            message_placeholder.markdown(full_response)   
     st.session_state.messages.append({"role": "assistant", "content": full_response})
 
 save_chat_history(st.session_state.messages)
