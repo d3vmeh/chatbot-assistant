@@ -5,29 +5,33 @@ from langchain.schema.document import Document
 from langchain_community.vectorstores.chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
 
-def load_doc(path):
-    doc_loader = PyPDFDirectoryLoader(path)
-    return doc_loader.load()
+def load_transcription():
+    file = open("transcription.txt", "r")
+    transcription = file.read()
+    file.close()
+    document = [Document(transcription)]
+    return document
 
-
-def split_docs(documents: list[Document]):
+def load_and_split():
+    document = load_transcription()
     text_splitter = RecursiveCharacterTextSplitter(chunk_size = 1000, chunk_overlap = 60, length_function = len, is_separator_regex  = False)
-    return text_splitter.split_documents(documents)
+    return text_splitter.split_documents(document)
 
-#def add_to_chroma(chunks: list[Document]):
-    #database = Chroma(persist_directory=)
-def create_chunks(path, replace_newlines=False):
-    document = load_doc(path)
-    chunks = split_docs(document)
-    if replace_newlines == True:
-        for i in range(len(chunks)):
-            chunks[i].page_content = chunks[i].page_content.replace("\n","")
-        return chunks
-    
-    return chunks
-    
-def save_database(embeddings, chunks, path):
-    #embeddings = OllamaEmbeddings(model="llama3")
+def save_database(embeddings, chunks, path):    
     database = Chroma.from_documents(chunks,embeddings,persist_directory=path)
     database.persist()
     print(f"Saved {len(chunks)} chunks to Chroma")
+
+def load_database(embeddings, path):
+    database = Chroma(persist_directory=path,embedding_function=embeddings)
+    return database
+
+
+def query_database(query, database, num_responses = 10, similarity_threshold = 0.5):
+    results = database.similarity_search_with_relevance_scores(query,k=num_responses)
+    try:
+        if results[0][1] < similarity_threshold:
+            print("Could not find results")
+    except:
+        print("Error")
+    return results
