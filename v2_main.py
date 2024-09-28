@@ -6,6 +6,7 @@ import shutil
 
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.llms.ollama import Ollama
+from langchain.memory import ChatMessageHistory
 
 
 from langchain.prompts import ChatPromptTemplate
@@ -63,58 +64,32 @@ def get_response(context, question, llm):
     return response_text
     
 def save_document_list():
-    with open('uploaded_files.pkl', 'wb') as file: 
-        print("SAVING:",len(uploaded_files))
-        s = pickle.dump(st.session_state["uploaded_files"],file)
-        file.close()
+    # with open('uploaded_files.pkl', 'wb') as file: 
+    #     print("SAVING:",len(uploaded_files))
+    #     s = pickle.dump(st.session_state["uploaded_files"],file)
+    #     file.close()
 
-    with open("file_names.pkl",'wb') as file:
-        pickle.dump(names, file)
-        file.close()
+    # with open("file_names.pkl",'wb') as file:
+    #     pickle.dump(names, file)
+    #     file.close()
 
     with open("files_and_names.pkl",'wb') as file:
         pickle.dump(files_and_names, file)
         file.close()
     
-    with open("removed_files.pkl",'wb') as file:    
-        pickle.dump(removed_files, file)
-        file.close()
+    # with open("removed_files.pkl",'wb') as file:    
+    #     pickle.dump(removed_files, file)
+    #     file.close()
 
 def load_document_list():
     x = []
-    try:
-        with open('uploaded_files.pkl', 'rb') as file: 
-            loaded = pickle.load(file) 
-        print("LOADED FROM FILE",len(loaded))
-        #st.session_state['uploaded_files'] = s
-        #uploaded_files = s
 
-        x.append(loaded)
-        #return loaded
-    except:
-        return [[],[],{},[]]
-    
-    try:
-        with open("file_names.pkl",'rb') as file:
-            names = pickle.load(file)
-        x.append(names)
-    except:
-        return [[],[],{},[]]
-    
     try:
         with open("files_and_names.pkl",'rb') as file:
             files_and_names = pickle.load(file)
         x.append(files_and_names)
     except:
-        return [[],[],{},[]]
-    
-    try:
-        with open("removed_files.pkl",'rb') as file:
-            removed_files = pickle.load(file)
-        x.append(removed_files)
-
-    except:
-        return [[],[],{},[]]
+        return [{}]
     
     return x
 
@@ -130,7 +105,7 @@ def remove_from_database(filename):
         return False
 
     
-embeddings = OpenAIEmbeddings()
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 llm = Ollama(model="llama3.2",temperature=0.6)
 
 
@@ -182,12 +157,12 @@ conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(l
 #     #st.session_state['uploaded_files'] = s
 # except:
 #     pass
-l = load_document_list()
-loaded = l[0]
-names = l[1]
-files_and_names = l[2]
-removed_files = l[3]
-print("***here are the removed files:",removed_files)
+# loaded = l[0]
+# names = l[1]
+# files_and_names = l[2]
+# removed_files = l[3]
+files_and_names = load_document_list()[0]
+print("Loaded files and names:",files_and_names)
 model_name = "llama3.2"
 with st.sidebar:
 
@@ -202,17 +177,37 @@ with st.sidebar:
         case "Llama 3.2":
             model_name = "llama3.2"
             llm = Ollama(model=model_name,temperature=0.6)
-            conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
+            #conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
+            
 
         case "GPT 4o":
-            model_name = "gpt-4o-turbo"
+            model_name = "gpt-4o"
             llm = ChatOpenAI(model=model_name,temperature=0.6)
-            conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
+            #conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
 
         case "GPT 4o Mini":
             model_name = "gpt-4o-mini"
             llm = ChatOpenAI(model=model_name,temperature=0.6)
-            conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
+        
+
+    if "memory" not in st.session_state:
+        conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
+        st.session_state["memory"] = conversation
+        st.session_state["history"] = ChatMessageHistory()
+        memory = ConversationSummaryMemory.from_messages(
+        llm=llm,
+        chat_memory=st.session_state["history"],
+        return_messages=True
+        )
+    else:
+        conversation = st.session_state["memory"]
+        st.session_state["history"] = ChatMessageHistory()
+        memory = ConversationSummaryMemory.from_messages(
+        llm=llm,
+        chat_memory=st.session_state["history"],
+        return_messages=True
+        )
+    
 
     number_of_results = st.number_input(
     "Number of results per database", value=20, placeholder="20"
@@ -228,19 +223,15 @@ with st.sidebar:
         st.session_state['uploaded_files'] = []
 
 
-    l = load_document_list()
-    loaded = l[0]
-    names = l[1]
-    files_and_names = l[2]
-    removed_files = l[3]
+    files_and_names = load_document_list()[0]
     #st.session_state['uploaded_files'] = s
     #uploaded_files = st.file_uploader("Upload multiple files", accept_multiple_files=True)
 
+    
 
 
-
-    previous_file_names = [file.name for file in st.session_state['uploaded_files']]
-
+    #previous_file_names = [file.name for file in st.session_state['uploaded_files']]
+    previous_file_names = list(files_and_names.keys())
 
 
     if st.button("Clear Chat History"):
@@ -254,31 +245,25 @@ with st.sidebar:
                 print("removed:",database_to_remove)
             except:
                 print("Error")
-
-
         print("===================\nDatabases cleared\n===================\n")
         st.write("Databases cleared")
+
+
         st.session_state["uploader_key"] += 1
+        st.session_state["uploaded_files"] = []
+
+
+        files_and_names = {}
         current_file_names = []
         previous_file_names = []
-        st.session_state["uploaded_files"] = []
         uploaded_files = []
         removed_files = []
 
-        st.session_state['uploaded_files'] = uploaded_files
-        save_document_list()
-        file_list = []
-
-        files_and_names = {}
+        #st.session_state['uploaded_files'] = uploaded_files
+        st.session_state['uploaded_files'] = list(files_and_names.keys())
         print("uploaded files:",len(uploaded_files))
-        names = []
         save_document_list()
-        l = load_document_list()
-        loaded = l[0]
-        names = l[1]
-        files_and_names = l[2]
-        removed_files = l[3]
-
+        files_ane_names = load_document_list()[0]
         chromadb.api.client.SharedSystemClient.clear_system_cache()
 
     uploaded_files = st.file_uploader(
@@ -287,11 +272,14 @@ with st.sidebar:
         key=st.session_state["uploader_key"]
     )
 
-    for z in loaded:
-        if z not in uploaded_files:
-            uploaded_files += loaded
+    st.write("Number of files:",len(files_and_names.keys()))
+    #for z in loaded:
+    #    if z not in uploaded_files:
+    #        uploaded_files += loaded
 
-    st.session_state['uploaded_files'] = uploaded_files
+    
+
+    st.session_state['uploaded_files'] = list(files_and_names.keys())#uploaded_files
     # with open('uploaded_files.pkl', 'wb') as file: 
     #     print("SAVING:",len(uploaded_files))
     #     s = pickle.dump(st.session_state["uploaded_files"],file)
@@ -300,98 +288,146 @@ with st.sidebar:
 
 
 
-    current_file_names = [file.name for file in uploaded_files] if uploaded_files else []
+    #current_file_names = [file.name for file in uploaded_files] if uploaded_files else []
+    current_file_names = list(files_and_names.keys())
 
     if len(uploaded_files) > 0:
         #print(f"\n\n {len(uploaded_files)} Uploaded files")
         #print(uploaded_files)
         #print("\n\n\n")
+
+        print("Here are the uploaded_files",uploaded_files)
         st.write("Loaded Files:")
         for uploaded_file in uploaded_files:
 
-            if uploaded_file is not None and uploaded_file.name not in removed_files:
-                file_list.append(uploaded_file.name)
+            #if uploaded_file is not None and uploaded_file.name not in removed_files:
+            #    file_list.append(uploaded_file.name)
             #if uploaded_file.name not in removed_files:
-                #st.write("filename:", uploaded_file.name)
-                #st.write(bytes_data)
-                bytes_data = uploaded_file.read()
-            else:
-                continue
+
+
+            #st.write("filename:", uploaded_file.name)
+            #st.write(bytes_data)
+            
+            bytes_data = uploaded_file.read()
+            #else:
+            #    continue
             filename = uploaded_file.name
 
-            if filename not in st.session_state["uploaded_files"] and filename not in removed_files:
-                names.append(filename)
-                db_path = os.path.join("DBs",filename)
-                print("FILENAME:",filename)
-                files_and_names[filename] = uploaded_file
-                print("FILES AND NAMES:",files_and_names)
-                #if not os.path.exists(db_path):# and st.session_state["uploader_key"] != 2:
-                #if filename not in os.listdir("DBs") and filename in files_and_names.keys() and filename not in removed_files:
-                if filename in removed_files:
-                    print("REMOVED:",removed_files)
-                if filename not in os.listdir("DBs") and filename not in removed_files:
-                    print("fil",files_and_names.keys(),removed_files)
-                    with st.spinner('Saving to database...'):
-                        os.makedirs(db_path)
-                        file_text = extract_pdf_text(uploaded_file)
-                        #print(type(file_text))
-                        doc = Document(file_text)
-                        print("Trying to save:",len(file_text),"at",db_path)
-                        st.write("trying to save:",filename)
-                        save_database(embeddings, create_chunks([doc]), db_path)
+            #if filename not in st.session_state["uploaded_files"] and filename not in removed_files:
+            
+            
 
+
+            db_path = os.path.join("DBs",filename)
+
+            #if not os.path.exists(db_path):# and st.session_state["uploader_key"] != 2:
+            #if filename not in os.listdir("DBs") and filename in files_and_names.keys() and filename not in removed_files:
+            #if filename in removed_files:
+            #    print("REMOVED:",removed_files)
+            if filename not in os.listdir("DBs") and filename not in files_and_names.keys():# and filename not in removed_files:
+                files_and_names[filename] = uploaded_file
+
+                print("fil",files_and_names.keys(),removed_files)
+                with st.spinner('Saving to database...'):
+                    os.makedirs(db_path)
+                    file_text = extract_pdf_text(uploaded_file)
+                    #print(type(file_text))
+                    doc = Document(file_text)
+                    print("Trying to save:",len(file_text),"at",db_path)
+                    #st.write("trying to save:",filename)
+                    save_database(embeddings, create_chunks([doc]), db_path)
+                    save_document_list()
+
+        uploaded_files = []
+        
     #for file_name in file_list:
     #Need to use list conversion dict to avoid RuntimeError: dictionary changed size during iteration
-    print("********BEFORE LOOP:",len(files_and_names.keys()))
-    files_removed = False
-    for file_name in file_list:#list(files_and_names):
-        print("length:",len(files_and_names.keys()))
+    #print("********BEFORE LOOP:",len(files_and_names.keys()))
+    #files_removed = False
+    
+    st.session_state["uploaded_files"] = list(files_and_names.keys())
+    for file_name in list(files_and_names):
+        print("f",file_name)
+        print(files_and_names.keys())
+        print(st.session_state["uploaded_files"])
         col1, col2 = st.columns([0.9, 0.2])
-        if file_name in os.listdir("DBs"):
-            print(os.listdir("DBs"))
-            print("*********IN DICT",len(files_and_names.keys()),removed_files)
+        if file_name in os.listdir("DBs") and file_name in files_and_names.keys() and file_name in st.session_state["uploaded_files"]:
+            print("Directory:",os.listdir("DBs"))
+            #if file_name in files_and_names.keys():
             with col1:
-                #if file_name in files_and_names.keys():
                     st.write(file_name)
             with col2:
                 count += 1
 
-                remove_file = st.button("X",key=count)#, key=(file_list.index(file_name)+random.randint(1,50))*1000)
+                remove_file = st.button("X",key=count)
+
+
             if remove_file:
-                print("*************removing",file_name,os.listdir("DBs"))
-                # Remove the file name from the file_list if the button is clicked
-                if file_name not in removed_files:
-                    removed_files.append(file_name)
-                
-                z = remove_from_database(file_name)
-                if z:
-                    print("ASDKFUNASDKLXJFNALKSJNDLKA")
-                    st.write(f"REMOVING FROM DB: {file_name}")
-                    st.session_state["uploaded_files"].remove(files_and_names[file_name])
-                    uploaded_files = st.session_state["uploaded_files"]
-
+                a = 0
+                status = remove_from_database(file_name)
+                if status:
+                    st.write(f"Removed: {file_name}")
+                    print("before:",files_and_names)
                     files_and_names.pop(file_name)
+                    print("after:",files_and_names)
+                    st.session_state["uploaded_files"].remove(file_name)
                     current_file_names.remove(file_name)
-                    file_list.remove(file_name)
-                    #a += 1
+                    print("new:",current_file_names)
                     save_document_list()
-
-                    print(len(file_list))
-                    #print("\n\n",current_file_names)
-                    #print(previous_file_names,"\n\n")
-
-                    save_document_list()
-                    l = load_document_list()
-                    loaded = l[0]
-                    names = l[1]
-                    files_and_names = l[2]
-                    removed_files = l[3]
-                    files_removed = True
-                    with col1:
-                        st.write("")
-
+                    #uploaded_files = st.session_state["uploaded_files"]
+                    st.rerun()
                 else:
-                    print("Error removing file:",file_name)
+                    st.write(f"Error removing: {file_name}")
+        
+
+    # for file_name in file_list:#list(files_and_names):
+    #     print("length:",len(files_and_names.keys()))
+    #     col1, col2 = st.columns([0.9, 0.2])
+    #     if file_name in os.listdir("DBs"):
+    #         print(os.listdir("DBs"))
+    #         print("*********IN DICT",len(files_and_names.keys()),removed_files)
+    #         with col1:
+    #             #if file_name in files_and_names.keys():
+    #                 st.write(file_name)
+    #         with col2:
+    #             count += 1
+
+    #             remove_file = st.button("X",key=count)#, key=(file_list.index(file_name)+random.randint(1,50))*1000)
+    #         if remove_file:
+    #             print("*************removing",file_name,os.listdir("DBs"))
+    #             # Remove the file name from the file_list if the button is clicked
+    #             if file_name not in removed_files:
+    #                 removed_files.append(file_name)
+                
+    #             z = remove_from_database(file_name)
+    #             if z:
+    #                 print("ASDKFUNASDKLXJFNALKSJNDLKA")
+    #                 st.write(f"REMOVING FROM DB: {file_name}")
+    #                 st.session_state["uploaded_files"].remove(files_and_names[file_name])
+    #                 uploaded_files = st.session_state["uploaded_files"]
+
+    #                 files_and_names.pop(file_name)
+    #                 current_file_names.remove(file_name)
+    #                 file_list.remove(file_name)
+    #                 #a += 1
+    #                 save_document_list()
+
+    #                 print(len(file_list))
+    #                 #print("\n\n",current_file_names)
+    #                 #print(previous_file_names,"\n\n")
+
+    #                 save_document_list()
+    #                 l = load_document_list()
+    #                 loaded = l[0]
+    #                 names = l[1]
+    #                 files_and_names = l[2]
+    #                 removed_files = l[3]
+    #                 files_removed = True
+    #                 with col1:
+    #                     st.write("")
+
+    #             else:
+    #                 print("Error removing file:",file_name)
                     #removed_files.remove(f)
                     #removed_files.remove(f)
                     #a += 1
@@ -448,7 +484,6 @@ with st.sidebar:
         if prev_file_name not in current_file_names:
             if prev_file_name not in removed_files:
                 removed_files.append(prev_file_name)
-            
             try:
                 remove_from_database(prev_file_name)
             except Exception as e:
