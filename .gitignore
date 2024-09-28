@@ -3,3 +3,5 @@ __pycache__/
 conversation_history.db
 uploaded_files.pkl
 file_names.pkl
+files_and_names.pkl
+removed_files.pkl

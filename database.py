@@ -53,7 +53,7 @@ def load_database(embeddings, path):
     return database
 
 
-def query_database(query, database, num_responses = 10, similarity_threshold = 0.5):
+def query_database(query, database, num_responses = 25, similarity_threshold = 0.5):
     results = database.similarity_search_with_relevance_scores(query,k=num_responses)
     try:
         if results[0][1] < similarity_threshold:
