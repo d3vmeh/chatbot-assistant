@@ -132,11 +132,6 @@ llm = Ollama(model="llama3.2",temperature=0.6)
 
 api_key = os.getenv("OPENAI_API_KEY")
 
-#chunks = load_and_split()
-#save_database(embeddings, chunks)
-#db = load_database(embeddings, "DBs/Chroma")
-#print("Ready to answer questions")
-
 db =  None
 
 count = 1000
@@ -148,19 +143,6 @@ if "messages" not in st.session_state:
 if "DBs" not in os.listdir():
     os.makedirs("DBs")
 
-# @st.cache_resource
-# def run_first():
-#     global removed_files
-#     #global file_list
-#     #global current_file_names
-#     global uploaded_files
-#     global files_and_names
-#     #global previous_file_names
-#     uploaded_files = []
-#     files_and_names = {}
-#     removed_files = []
-
-# run_first()
 
 def initialize():
     #files_directory = 'predefined_files'
@@ -203,7 +185,6 @@ files_and_names = l[2]
 removed_files = l[3]
 print("***here are the removed files:",removed_files)
 model_name = "llama3.2"
-print("ldfnaldsasda")
 with st.sidebar:
 
     #print("Removed file names: ", removed_files)
@@ -228,6 +209,9 @@ with st.sidebar:
             llm = ChatOpenAI(model=model_name,temperature=0.6)
             conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
 
+    number_of_results = st.number_input(
+    "Number of results per database", value=20, placeholder="20"
+    )
 
 
     previous_file_names = current_file_names
@@ -316,16 +300,8 @@ with st.sidebar:
     save_document_list()
 
 
-    #previous_file_names = [file.name for file in st.session_state['uploaded_files']]
-
-    #print("a1231231",current_file_names)
-    #previous_file_names = current_file_names
 
     current_file_names = [file.name for file in uploaded_files] if uploaded_files else []
-    
-    print("asdasdasdasd",len(uploaded_files))
-    #print(current_file_names)
-    #print(previous_file_names)
 
     if len(uploaded_files) > 0:
         #print(f"\n\n {len(uploaded_files)} Uploaded files")
@@ -444,10 +420,8 @@ with st.sidebar:
     print("Previous file names: ", previous_file_names)
     # Identify which files were removed by comparing lists
     for prev_file_name in previous_file_names:
-        print("hi")
-        print(prev_file_name)
+        #print(prev_file_name)
         if prev_file_name not in current_file_names:
-            print("Hello")
             if prev_file_name not in removed_files:
                 removed_files.append(prev_file_name)
             
@@ -476,17 +450,23 @@ if prompt := st.chat_input("How can I help?"):
         message_placeholder = st.empty()
         context_list = []
         context = ""
+        num_results_counter = 0
+
         
         with st.spinner("Searching Database..."):
             for file in current_file_names:
                 db = load_database(embeddings, os.path.join("DBs", file))
-                results, results_text = query_database(prompt,db)
-                
+                results, results_text = query_database(prompt,db,num_responses=number_of_results)
+                num_results_counter += len(results)
                 print(type(results))
                 context += "\n\n New Document Source:\n"+results_text+"\n\n"
-            #context = query_database(prompt,db)
-            print(len(context), type(context))
-            print(context)
+            
+        st.markdown(f"*Got {num_results_counter} results from database*")
+
+        with st.spinner(f"Generating response..."):
+            #print(len(context), type(context))
+            #print(context)
+            
 
             full_response = get_response(context,prompt,llm)
             message_placeholder.markdown(full_response)   
