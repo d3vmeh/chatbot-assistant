@@ -145,6 +145,9 @@ names = []
 if "messages" not in st.session_state:
     st.session_state.messages = load_chat_history()
 
+if "DBs" not in os.listdir():
+    os.makedirs("DBs")
+
 # @st.cache_resource
 # def run_first():
 #     global removed_files
@@ -198,7 +201,7 @@ loaded = l[0]
 names = l[1]
 files_and_names = l[2]
 removed_files = l[3]
-
+print("***here are the removed files:",removed_files)
 model_name = "llama3.2"
 print("ldfnaldsasda")
 with st.sidebar:
@@ -330,6 +333,7 @@ with st.sidebar:
         #print("\n\n\n")
         st.write("Loaded Files:")
         for uploaded_file in uploaded_files:
+
             if uploaded_file is not None:
                 file_list.append(uploaded_file.name)
             bytes_data = uploaded_file.read()
@@ -337,22 +341,26 @@ with st.sidebar:
                 st.write("filename:", uploaded_file.name)
             #st.write(bytes_data)
             filename = uploaded_file.name
-            names.append(filename)
-            db_path = os.path.join("DBs",filename)
-            print("FILENAME:",filename)
-            files_and_names[filename] = uploaded_file
-            print("FILES AND NAMES:",files_and_names)
-            #if not os.path.exists(db_path):# and st.session_state["uploader_key"] != 2:
-            #if filename not in os.listdir("DBs") and filename in files_and_names.keys() and filename not in removed_files:
-            if filename not in os.listdir("DBs") and filename not in removed_files:
-                print("fil",files_and_names.keys(),removed_files)
-                with st.spinner('Saving to database...'):
-                    os.makedirs(db_path)
-                    file_text = extract_pdf_text(uploaded_file)
-                    #print(type(file_text))
-                    doc = Document(file_text)
-                    print("Trying to save:",len(file_text),"at",db_path)
-                    save_database(embeddings, create_chunks([doc]), db_path)
+
+            if filename not in st.session_state["uploaded_files"]:
+                names.append(filename)
+                db_path = os.path.join("DBs",filename)
+                print("FILENAME:",filename)
+                files_and_names[filename] = uploaded_file
+                print("FILES AND NAMES:",files_and_names)
+                #if not os.path.exists(db_path):# and st.session_state["uploader_key"] != 2:
+                #if filename not in os.listdir("DBs") and filename in files_and_names.keys() and filename not in removed_files:
+                if filename in removed_files:
+                    print("REMOVED:",removed_files)
+                if filename not in os.listdir("DBs") and filename not in removed_files:
+                    print("fil",files_and_names.keys(),removed_files)
+                    with st.spinner('Saving to database...'):
+                        os.makedirs(db_path)
+                        file_text = extract_pdf_text(uploaded_file)
+                        #print(type(file_text))
+                        doc = Document(file_text)
+                        print("Trying to save:",len(file_text),"at",db_path)
+                        save_database(embeddings, create_chunks([doc]), db_path)
 
 
     #for file_name in file_list:
@@ -363,7 +371,7 @@ with st.sidebar:
         col1, col2 = st.columns([0.9, 0.1])
         if file_name in os.listdir("DBs"):
             print(os.listdir("DBs"))
-            print("*********IN DICT",len(files_and_names.keys()))
+            print("*********IN DICT",len(files_and_names.keys()),removed_files)
             with col1:
                 #if file_name in files_and_names.keys():
 
@@ -440,8 +448,13 @@ with st.sidebar:
         print(prev_file_name)
         if prev_file_name not in current_file_names:
             print("Hello")
-            #removed_files.append(prev_file_name)
-            remove_from_database(prev_file_name)
+            if prev_file_name not in removed_files:
+                removed_files.append(prev_file_name)
+            
+            try:
+                remove_from_database(prev_file_name)
+            except Exception as e:
+                print("Error removing file:",e)
         #if remove_file:
             #file_list.remove(file_name)
             #shutil.rmtree(os.path.join("DBs", prev_file_name))
@@ -462,16 +475,18 @@ if prompt := st.chat_input("How can I help?"):
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         context_list = []
-        context = []
+        context = ""
         
         with st.spinner("Searching Database..."):
             for file in current_file_names:
                 db = load_database(embeddings, os.path.join("DBs", file))
-                info = query_database(prompt,db)
-                print(type(info))
-                context += info
+                results, results_text = query_database(prompt,db)
+                
+                print(type(results))
+                context += "\n\n New Document Source:\n"+results_text+"\n\n"
             #context = query_database(prompt,db)
-            print(len(context))
+            print(len(context), type(context))
+            print(context)
 
             full_response = get_response(context,prompt,llm)
             message_placeholder.markdown(full_response)   

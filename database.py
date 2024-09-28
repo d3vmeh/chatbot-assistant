@@ -2,7 +2,8 @@ from langchain_community.document_loaders.pdf import PyPDFDirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
 
-from langchain_community.vectorstores.chroma import Chroma
+#from langchain_community.vectorstores.chroma import Chroma
+from langchain_chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
 
 from langchain.text_splitter import TokenTextSplitter
@@ -55,9 +56,10 @@ def load_database(embeddings, path):
 
 def query_database(query, database, num_responses = 25, similarity_threshold = 0.5):
     results = database.similarity_search_with_relevance_scores(query,k=num_responses)
+    results_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
     try:
         if results[0][1] < similarity_threshold:
             print("Could not find results")
     except:
         print("Error")
-    return results
+    return results, results_text
