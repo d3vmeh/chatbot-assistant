@@ -14,10 +14,11 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain.chains import ConversationChain
 from langchain.memory.summary import ConversationSummaryMemory
 
+
 import pickle
 from langchain.schema.document import Document
 import chromadb
-import random
+
 
 chromadb.api.client.SharedSystemClient.clear_system_cache()
 
@@ -205,7 +206,7 @@ with st.sidebar:
             conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
 
         case "GPT 4o":
-            model_name = "gpt-4o-turbo"
+            model_name = "gpt-4o-2024-08-06"
             llm = ChatOpenAI(model=model_name,temperature=0.6)
             conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
 
@@ -213,6 +214,7 @@ with st.sidebar:
             model_name = "gpt-4o-mini"
             llm = ChatOpenAI(model=model_name,temperature=0.6)
             conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
+
 
     number_of_results = st.number_input(
     "Number of results per database", value=20, placeholder="20"

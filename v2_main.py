@@ -18,7 +18,6 @@ from langchain.memory.summary import ConversationSummaryMemory
 import pickle
 from langchain.schema.document import Document
 import chromadb
-import random
 
 chromadb.api.client.SharedSystemClient.clear_system_cache()
 
@@ -229,7 +228,8 @@ with st.sidebar:
     uploaded_files = st.file_uploader(
         "Choose a PDF file", 
         accept_multiple_files=True,
-        key=st.session_state["uploader_key"]
+        key=st.session_state["uploader_key"],
+        type=["pdf"]
     )
 
     st.write("Number of files:",len(files_and_names.keys()))
@@ -354,14 +354,15 @@ if prompt := st.chat_input("How can I help?"):
                 db = load_database(embeddings, os.path.join("DBs", file))
                 results, results_text = query_database(prompt,db,num_responses=number_of_results)
                 num_results_counter += len(results)
+
                 print(type(results))
                 context += "\n\n New Document Source:\n"+results_text+"\n\n"
+                #st.write("Results:",results_text)
             
         st.markdown(f"*Got {num_results_counter} results from database*")
 
         with st.spinner(f"Generating response..."):
-            #print(len(context), type(context))
-            #print(context)
+
             
 
             full_response = get_response(context,prompt,llm)

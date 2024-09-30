@@ -1,0 +1,9 @@
+Chroma
+langchain
+langchain-community
+langchain-core
+langchain-openai
+langchain_chroma
+chromadb
+streamlit
+pdfplumber

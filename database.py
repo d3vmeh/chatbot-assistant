@@ -17,7 +17,7 @@ def load_doc(path):
 
 
 def split_docs(documents: list[Document]):
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size = 1000, chunk_overlap = 60, length_function = len, is_separator_regex  = False)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size = 1024, chunk_overlap = 100, length_function = len, is_separator_regex  = False)
     #text_splitter = TokenTextSplitter(chunk_size=1000, chunk_overlap=60)
     #documents = text_splitter.split_documents(documents)
     return text_splitter.split_documents(documents)
@@ -27,14 +27,11 @@ def extract_pdf_text(uploaded_file):
     with pdfplumber.open(uploaded_file) as pdf:
         for page in pdf.pages:
             total += page.extract_text()
-        #pages = [page.extract_text() for page in pdf.pages]
 
     return total
 
-#def add_to_chroma(chunks: list[Document]):
-    #database = Chroma(persist_directory=)
+
 def create_chunks(document,replace_newlines=False):#path, replace_newlines=False):
-    #document = load_doc(path)
     chunks = split_docs(document)
     if replace_newlines == True:
         for i in range(len(chunks)):
@@ -46,7 +43,6 @@ def create_chunks(document,replace_newlines=False):#path, replace_newlines=False
 
 def save_database(embeddings, chunks, path):    
     database = Chroma.from_documents(chunks,embeddings,persist_directory=path)
-    #database.persist()
     print(f"Saved {len(chunks)} chunks to Chroma")
 
 def load_database(embeddings, path):
@@ -54,7 +50,7 @@ def load_database(embeddings, path):
     return database
 
 
-def query_database(query, database, num_responses = 20, similarity_threshold = 0.5):
+def query_database(query, database, num_responses = 20, similarity_threshold = 0.4):
     results = database.similarity_search_with_relevance_scores(query,k=num_responses)
     results_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
     try:
