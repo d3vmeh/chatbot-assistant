@@ -17,11 +17,16 @@ Incorporates a Retrieval-Augmented Generation (RAG) system, storing and retrievi
 
 ## Uses:
 - Personal productivity assistant for research, note-taking, and file-based queries.
-- Private, customizable AI chatbot experience on your local machine.
+- Local AI chatbot experience
 - Enhanced context for conversations through persistent storage and retrieval of files and previous interactions.
 
 ## Setup:
-Clone the repo, open the folder via terminal or command prompt, then run the chatbot with the following command:
+Clone the repo and open the folder via terminal or command prompt. 
+
+Make sure to set an environment variable OPENAI_API_KEY to your API key in your system or in an environment.
+
+
+then run the chatbot with the following command:
 
 ```streamlit run v2_main.py```
 
