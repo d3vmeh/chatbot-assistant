@@ -8,5 +8,5 @@ langchain-openai==0.1.25
 langchain-anthropic==0.1.23
 streamlit==1.38.0
 langchain-chroma==0.1.2
-chromadb==0.5.5=
+chromadb==0.5.5
 pdfplumber==0.11.4
