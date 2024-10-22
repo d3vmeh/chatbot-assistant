@@ -12,7 +12,7 @@ Leverages large language models to provide intelligent and conversational respon
 Upload PDF documents directly to the assistant, which can read, interpret, and respond based on the content.
 
 ### Contextual Memory with RAG:
-Incorporates a Retrieval-Augmented Generation (RAG) system, storing and retrieving relevant information from files and conversations using Chroma databases to ensure context-aware interactions.
+Incorporates a Retrieval-Augmented Generation (RAG) system, storing and retrieving relevant information from files and conversations using Chroma databases for context-aware interactions.
 
 
 ## Uses:
@@ -23,7 +23,7 @@ Incorporates a Retrieval-Augmented Generation (RAG) system, storing and retrievi
 ## Setup:
 Clone the repo and open the folder via terminal or command prompt. 
 
-Make sure to set an environment variable OPENAI_API_KEY to your API key in your system or in an environment.
+Set an environment variable OPENAI_API_KEY to your API key in your system or in an environment.
 
 
 then run the chatbot with the following command:
