@@ -60,7 +60,10 @@ def get_response(context, question, llm):
          | StrOutputParser()
     )
     #response_text = model.invoke(prompt)
-    response_text = chain.invoke(question)
+    try:
+        response_text = chain.invoke(question)
+    except:
+        response_text = "Error generating response. May be an API key issue."
     return response_text
     
 def save_document_list():
@@ -97,9 +100,15 @@ embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 llm = Ollama(model="llama3.2",temperature=0.6)
 
 
-api_key = os.getenv("OPENAI_API_KEY")
-ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
+try:
+    api_key = os.getenv("OPENAI_API_KEY")
+except:
+    print("Error loading OpenAI API key")
 
+try:
+    ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
+except:
+    print("Error loaded Anthropic API key")
 
 #llm = ChatAnthropic(model_name="claude-3-5-sonnet-20240620",temperature=0.6)
 db =  None
@@ -152,20 +161,27 @@ with st.sidebar:
 
         case "GPT 4o":
             model_name = "gpt-4o"
-            llm = ChatOpenAI(model=model_name,temperature=temp)
-            #conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
+            try:
+                llm = ChatOpenAI(model=model_name,temperature=temp)
+                #conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
+            except:
+                st.write("GPT-4o Error. Likely due to API key. Exiting...")
+                exit()
 
         case "GPT 4o Mini":
             model_name = "gpt-4o-mini"
-            llm = ChatOpenAI(model=model_name,temperature=temp)
-        
-        case "OpenAI o1 Preview":
-            model_name = "o1-preview"
-            llm = ChatOpenAI(model=model_name,temperature=temp)
+            try:
+                llm = ChatOpenAI(model=model_name,temperature=temp)
+            except:
+                st.write("GPT-4o-mini Error. Likely due to API key. Exiting...")
+                exit()
+        # case "OpenAI o1 Preview":
+        #     model_name = "o1-preview"
+        #     llm = ChatOpenAI(model=model_name,temperature=temp)
 
-        case "OpenAI o1 mini":
-            model_name = "o1-mini"
-            llm = ChatOpenAI(model=model_name,temperature=temp)
+        # case "OpenAI o1 mini":
+        #     model_name = "o1-mini"
+        #     llm = ChatOpenAI(model=model_name,temperature=temp)
 
 
     if "memory" not in st.session_state:
