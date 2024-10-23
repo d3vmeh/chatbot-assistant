@@ -135,26 +135,34 @@ with st.sidebar:
     #print("Removed file names: ", removed_files)
 
     st.write("Select Model")
-    option = st.selectbox("Select Model",("Llama3.2", "GPT 4o", "GPT 4o Mini"))
+    option = st.selectbox("Select Model",("Llama3.2", "GPT 4o", "GPT 4o Mini", "OpenAI o1 Preview", "OpenAI o1 mini"))
     
 
-
+    temp = st.number_input("Temperature", value=0.6, placeholder="0.6")
     match option:
         case "Llama 3.2":
             model_name = "llama3.2"
-            llm = Ollama(model=model_name,temperature=0.6)
+            llm = Ollama(model=model_name,temperature=temp)
             #conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
             
 
         case "GPT 4o":
             model_name = "gpt-4o"
-            llm = ChatOpenAI(model=model_name,temperature=0.6)
+            llm = ChatOpenAI(model=model_name,temperature=temp)
             #conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
 
         case "GPT 4o Mini":
             model_name = "gpt-4o-mini"
-            llm = ChatOpenAI(model=model_name,temperature=0.6)
+            llm = ChatOpenAI(model=model_name,temperature=temp)
         
+        case "OpenAI o1 Preview":
+            model_name = "o1-preview"
+            llm = ChatOpenAI(model=model_name,temperature=temp)
+
+        case "OpenAI o1 mini":
+            model_name = "o1-mini"
+            llm = ChatOpenAI(model=model_name,temperature=temp)
+
 
     if "memory" not in st.session_state:
         conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))

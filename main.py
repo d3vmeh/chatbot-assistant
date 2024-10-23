@@ -136,7 +136,6 @@ llm = Ollama(model="llama3.2",temperature=0.6)
 
 
 api_key = os.getenv("OPENAI_API_KEY")
-
 db =  None
 
 count = 1000
