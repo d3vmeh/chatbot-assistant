@@ -13,6 +13,7 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain.chains import ConversationChain
 from langchain.memory.summary import ConversationSummaryMemory
+from langchain_anthropic import ChatAnthropic
 
 
 import pickle
@@ -136,7 +137,10 @@ llm = Ollama(model="llama3.2",temperature=0.6)
 
 
 api_key = os.getenv("OPENAI_API_KEY")
+ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 
+
+#llm = ChatAnthropic(model_name="claude-3-5-sonnet-20240620",temperature=0.6)
 db =  None
 
 count = 1000
