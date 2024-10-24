@@ -14,6 +14,7 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain.chains import ConversationChain
 from langchain.memory.summary import ConversationSummaryMemory
+from langchain.memory.buffer import ConversationBufferMemory
 from langchain_anthropic import ChatAnthropic
 
 import pickle
@@ -29,6 +30,31 @@ def load_chat_history():
 def save_chat_history(messages):
     with shelve.open("conversation_history") as db:
         db["messages"] = messages
+
+
+def format_chat_history(messages):
+    formatted_history = ""
+    
+    # Iterate through the messages and append the roles and content
+    for message in messages:
+        role = message.get('role', 'user')  # Default role to 'user' if not provided
+        content = message.get('content', '')
+        
+        # Format the role and content into a string
+        if role == 'user':
+            formatted_history += f"Human: {content}\n"
+        elif role == 'assistant':
+            formatted_history += f"AI: {content}\n"
+    
+    return formatted_history
+
+# Example usage
+messages = [{'role': 'user', 'content': 'Hello'}, 
+            {'role': 'assistant', 'content': "Hello! It's nice to meet you. I'm here to help with any questions or concerns you may have. Is there something specific you'd like to talk about, or are you just looking for a friendly conversation?"}]
+
+formatted_history = format_chat_history(messages)
+print(formatted_history)
+
 
 
 
@@ -114,8 +140,10 @@ except:
 db =  None
 
 count = 1000
-st.title("Chat with Files")
+st.title("Chatbot")
 names = []
+
+
 if "messages" not in st.session_state:
     st.session_state.messages = load_chat_history()
 
@@ -143,12 +171,20 @@ conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(l
 files_and_names = load_document_list()[0]
 print("Loaded files and names:",files_and_names)
 model_name = "llama3.2"
+
+
+if "conversation_memory" not in st.session_state:
+    st.session_state.conversation_memory = ConversationBufferMemory(return_messages=True)
+    
+# Create conversation chain with memory
+conversation = ConversationChain(llm=llm, memory=st.session_state.conversation_memory)
+
 with st.sidebar:
 
     #print("Removed file names: ", removed_files)
 
     st.write("Select Model")
-    option = st.selectbox("Select Model",("Llama3.2", "GPT 4o", "GPT 4o Mini", "OpenAI o1 Preview", "OpenAI o1 mini"))
+    option = st.selectbox("Select Model",("Llama3.2", "GPT 4o", "GPT 4o Mini"))
     
 
     temp = st.number_input("Temperature", value=0.6, placeholder="0.6")
@@ -175,34 +211,17 @@ with st.sidebar:
             except:
                 st.write("GPT-4o-mini Error. Likely due to API key. Exiting...")
                 exit()
-        # case "OpenAI o1 Preview":
-        #     model_name = "o1-preview"
-        #     llm = ChatOpenAI(model=model_name,temperature=temp)
-
-        # case "OpenAI o1 mini":
-        #     model_name = "o1-mini"
-        #     llm = ChatOpenAI(model=model_name,temperature=temp)
 
 
-    if "memory" not in st.session_state:
-        conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
-        st.session_state["memory"] = conversation
-        st.session_state["history"] = ChatMessageHistory()
-        memory = ConversationSummaryMemory.from_messages(
-        llm=llm,
-        chat_memory=st.session_state["history"],
-        return_messages=True
-        )
-    else:
-        conversation = st.session_state["memory"]
-        st.session_state["history"] = ChatMessageHistory()
-        memory = ConversationSummaryMemory.from_messages(
-        llm=llm,
-        chat_memory=st.session_state["history"],
-        return_messages=True
-        )
+    st.session_state["conversation_memory"] = ConversationBufferMemory(return_messages=True)
+    conversation = ConversationChain(llm=llm, memory=st.session_state["conversation_memory"])
+    print(conversation)
     
 
+    
+    print("conv:\n",conversation)
+
+    print("Chat history:",format_chat_history(st.session_state.messages))
     number_of_results = st.number_input(
     "Number of results per database", value=20, placeholder="20"
     )
