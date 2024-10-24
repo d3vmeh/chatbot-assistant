@@ -48,12 +48,6 @@ def format_chat_history(messages):
     
     return formatted_history
 
-# Example usage
-messages = [{'role': 'user', 'content': 'Hello'}, 
-            {'role': 'assistant', 'content': "Hello! It's nice to meet you. I'm here to help with any questions or concerns you may have. Is there something specific you'd like to talk about, or are you just looking for a friendly conversation?"}]
-
-formatted_history = format_chat_history(messages)
-print(formatted_history)
 
 
 
