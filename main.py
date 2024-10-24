@@ -52,9 +52,7 @@ def format_chat_history(messages):
 
 
 
-def get_response(context, question, llm):
-    #encoded_image = encode_image(path)
-
+def get_response(chat_history, context, question, llm):
     prompt = ChatPromptTemplate.from_messages(
         [
         (
@@ -63,7 +61,11 @@ def get_response(context, question, llm):
         ),
         (
             "user",
-            """You can use the following context to help you answer the question if there is some:
+            """
+            Here are your previous conversations with the user:
+            {chat_history}
+
+            You can use the following context to help you answer the question if there is some:
             {context}
 
 
@@ -72,9 +74,9 @@ def get_response(context, question, llm):
         ),
         ]
         )
-    
+
     chain = (
-         {"context": lambda x: context, "question": RunnablePassthrough()}
+         {"chat_history": lambda z: chat_history,"context": lambda x: context, "question": RunnablePassthrough()}
          | prompt
          | llm
          | StrOutputParser()
@@ -403,11 +405,11 @@ if prompt := st.chat_input("How can I help?"):
         st.markdown(f"*Got {num_results_counter} results from database*")
 
         with st.spinner(f"Generating response..."):
-
-            
-
-            full_response = get_response(context,prompt,llm)
+            formatted_chat_history = format_chat_history(st.session_state.messages)
+            full_response = get_response(formatted_chat_history,context,prompt,llm)
             message_placeholder.markdown(full_response)   
+
+    
     st.session_state.messages.append({"role": "assistant", "content": full_response})
 
 save_chat_history(st.session_state.messages)
