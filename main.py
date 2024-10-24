@@ -132,7 +132,6 @@ try:
 except:
     print("Error loaded Anthropic API key")
 
-#llm = ChatAnthropic(model_name="claude-3-5-sonnet-20240620",temperature=0.6)
 db =  None
 
 count = 1000
@@ -180,7 +179,7 @@ with st.sidebar:
     #print("Removed file names: ", removed_files)
 
     st.write("Select Model")
-    option = st.selectbox("Select Model",("Llama3.2", "GPT 4o", "GPT 4o Mini"))
+    option = st.selectbox("Select Model",("Llama3.2", "GPT 4o", "GPT 4o Mini", "Claude 3.5"))
     
 
     temp = st.number_input("Temperature", value=0.6, placeholder="0.6")
@@ -208,16 +207,23 @@ with st.sidebar:
                 st.write("GPT-4o-mini Error. Likely due to API key. Exiting...")
                 exit()
 
+        case "Claude 3.5":
+            model_name = "claude-3-5-sonnet-20240620"
+            try:
+                llm = ChatAnthropic(model_name=model_name,temperature=temp)
+            except:
+                st.write("Claude 3.5 Error. Likely due to API key. Exiting...")
+                exit()
 
-    st.session_state["conversation_memory"] = ConversationBufferMemory(return_messages=True)
-    conversation = ConversationChain(llm=llm, memory=st.session_state["conversation_memory"])
-    print(conversation)
+
+    #st.session_state["conversation_memory"] = ConversationBufferMemory(return_messages=True)
+    #conversation = ConversationChain(llm=llm, memory=st.session_state["conversation_memory"])
     
 
     
-    print("conv:\n",conversation)
 
-    print("Chat history:",format_chat_history(st.session_state.messages))
+    #print("Chat history:",format_chat_history(st.session_state.messages))
+    
     number_of_results = st.number_input(
     "Number of results per database", value=20, placeholder="20"
     )
