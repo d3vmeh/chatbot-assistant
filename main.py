@@ -179,17 +179,12 @@ with st.sidebar:
     #print("Removed file names: ", removed_files)
 
     st.write("Select Model")
-    option = st.selectbox("Select Model",("Llama3.2", "GPT 4o", "GPT 4o Mini", "Claude 3.5"))
+    option = st.selectbox("Select Model",("GPT 4o", "GPT 4o Mini", "Claude 3.5","Llama3.2"))
     
 
     temp = st.number_input("Temperature", value=0.6, placeholder="0.6")
     match option:
-        case "Llama 3.2":
-            model_name = "llama3.2"
-            llm = Ollama(model=model_name,temperature=temp)
-            #conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
-            
-
+        
         case "GPT 4o":
             model_name = "gpt-4o"
             try:
@@ -214,6 +209,15 @@ with st.sidebar:
             except:
                 st.write("Claude 3.5 Error. Likely due to API key. Exiting...")
                 exit()
+
+        case "Llama 3.2":
+            model_name = "llama3.2"
+            try:
+                llm = Ollama(model=model_name,temperature=temp)
+            except:
+                st.write("Llama 3.2 Error. Exiting...")
+                exit()
+            
 
 
     #st.session_state["conversation_memory"] = ConversationBufferMemory(return_messages=True)
