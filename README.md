@@ -23,7 +23,7 @@ Incorporates a Retrieval-Augmented Generation (RAG) system, storing and retrievi
 ## Setup:
 Clone the repo and open the folder via terminal or command prompt. 
 
-Set an environment variable OPENAI_API_KEY to your API key in your system or in an environment.
+Set a environment variables ```OPENAI_API_KEY``` and ```ANTHROPIC_API_KEY``` in your system or in an environment. You can also use Llama3.2 to run it locally.
 
 
 then run the chatbot with the following command:
