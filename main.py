@@ -134,8 +134,13 @@ except:
 
 db =  None
 
+
+st.set_page_config(page_title="Chatbot")
 count = 1000
 st.title("Chatbot")
+
+
+
 names = []
 
 
@@ -161,28 +166,21 @@ file_list = []
 
 current_file_names = []
 previous_file_names = []
-conversation = ConversationChain(llm = llm, memory = ConversationSummaryMemory(llm=llm))
 
 files_and_names = load_document_list()[0]
 print("Loaded files and names:",files_and_names)
 model_name = "llama3.2"
 
 
-if "conversation_memory" not in st.session_state:
-    st.session_state.conversation_memory = ConversationBufferMemory(return_messages=True)
-    
-# Create conversation chain with memory
-conversation = ConversationChain(llm=llm, memory=st.session_state.conversation_memory)
-
 with st.sidebar:
 
     #print("Removed file names: ", removed_files)
 
     st.write("Select Model")
-    option = st.selectbox("Select Model",("GPT 4o", "GPT 4o Mini", "Claude 3.5","Llama3.2"))
+    option = st.selectbox("Select Model",("GPT 4o", "Claude 3.5 Sonnet", "GPT 4o Mini","Llama3.2"))
     
 
-    temp = st.number_input("Temperature", value=0.6, placeholder="0.6")
+    temp = st.number_input("Temperature", value=0.5, placeholder="0.5")
     match option:
         
         case "GPT 4o":
@@ -202,8 +200,8 @@ with st.sidebar:
                 st.write("GPT-4o-mini Error. Likely due to API key. Exiting...")
                 exit()
 
-        case "Claude 3.5":
-            model_name = "claude-3-5-sonnet-20240620"
+        case "Claude 3.5 Sonnet":
+            model_name = "claude-3-5-sonnet-20241022"
             try:
                 llm = ChatAnthropic(model_name=model_name,temperature=temp)
             except:
@@ -220,8 +218,6 @@ with st.sidebar:
             
 
 
-    #st.session_state["conversation_memory"] = ConversationBufferMemory(return_messages=True)
-    #conversation = ConversationChain(llm=llm, memory=st.session_state["conversation_memory"])
     
 
     
@@ -365,15 +361,15 @@ with st.sidebar:
                 else:
                     st.write(f"Error removing: {file_name}")
  
-    st.write("Removed files:",removed_files)
-    st.write("Current file names:",current_file_names)
-    st.write("Previous file names:",previous_file_names)
-    st.write("Files and names:",files_and_names)
+    # st.write("Removed files:",removed_files)
+    # st.write("Current file names:",current_file_names)
+    # st.write("Previous file names:",previous_file_names)
+    # st.write("Files and names:",files_and_names)
     
 
-    print("Removed file names: ", removed_files)
-    print("Current file names: ", current_file_names)
-    print("Previous file names: ", previous_file_names)
+    # print("Removed file names: ", removed_files)
+    # print("Current file names: ", current_file_names)
+    # print("Previous file names: ", previous_file_names)
     # Identify which files were removed by comparing lists
     for prev_file_name in previous_file_names:
         if prev_file_name not in current_file_names:
