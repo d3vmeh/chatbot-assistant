@@ -200,8 +200,8 @@ with st.sidebar:
                 st.write("GPT-4o-mini Error. Likely due to API key. Exiting...")
                 exit()
 
-        case "Claude 3.5 Sonnet":
-            model_name = "claude-3-5-sonnet-20241022"
+        case "Claude 4.0 Sonnet":
+            model_name = "claude-sonnet-4-20250514"
             try:
                 llm = ChatAnthropic(model_name=model_name,temperature=temp)
             except:
